@@ -1,0 +1,41 @@
+# Build stage
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY apps/client/package*.json ./apps/client/
+COPY packages/shared/package*.json ./packages/shared/
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY apps/client ./apps/client
+COPY packages/shared ./packages/shared
+
+# Build shared package
+WORKDIR /app/packages/shared
+RUN npm run build
+
+# Build client
+WORKDIR /app/apps/client
+RUN npm run build
+
+# Production stage
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy built application
+COPY --from=builder /app/apps/client/.next ./.next
+COPY --from=builder /app/apps/client/public ./public
+COPY --from=builder /app/apps/client/node_modules ./node_modules
+COPY --from=builder /app/apps/client/package*.json ./
+
+# Expose port
+EXPOSE 3000
+
+# Start Next.js
+CMD ["npm", "start"]

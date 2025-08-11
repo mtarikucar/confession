@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: confess_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: confess_game
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - confess_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: confess_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - confess_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: confess_server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      SERVER_PORT: 3001
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/confess_game
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3000}
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - confess_network
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/index.js"
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: confess_client
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_SERVER_URL: ${SERVER_URL:-http://localhost:3001}
+      NEXT_PUBLIC_SOCKET_URL: ${SOCKET_URL:-ws://localhost:3001}
+    depends_on:
+      - server
+    networks:
+      - confess_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: confess_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - client
+      - server
+    networks:
+      - confess_network
+
+networks:
+  confess_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

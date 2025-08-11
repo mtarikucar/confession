@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(uuid())
+  nickname   String      @unique
+  roomId     String?
+  room       Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  confession Confession?
+  player1Rounds GameRound[] @relation("Player1")
+  player2Rounds GameRound[] @relation("Player2")
+  wonRounds     GameRound[] @relation("Winner")
+  createdAt  DateTime    @default(now())
+  
+  @@index([roomId])
+  @@index([nickname])
+}
+
+model Room {
+  id        String      @id @default(uuid())
+  name      String
+  users     User[]
+  rounds    GameRound[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  
+  @@index([createdAt])
+}
+
+model Confession {
+  id         String      @id @default(uuid())
+  userId     String      @unique
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String      @db.Text
+  isRevealed Boolean     @default(false)
+  revealedInRounds GameRound[]
+  createdAt  DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([isRevealed])
+}
+
+enum GameStatus {
+  pending
+  in_progress
+  completed
+  cancelled
+}
+
+model GameRound {
+  id                   String      @id @default(uuid())
+  roomId               String
+  room                 Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  player1Id            String
+  player1              User        @relation("Player1", fields: [player1Id], references: [id])
+  player2Id            String
+  player2              User        @relation("Player2", fields: [player2Id], references: [id])
+  winnerId             String?
+  winner               User?       @relation("Winner", fields: [winnerId], references: [id])
+  revealedConfessionId String?
+  revealedConfession   Confession? @relation(fields: [revealedConfessionId], references: [id])
+  gameId               String      // "rps", "ballrace3d", etc.
+  status               GameStatus  @default(pending)
+  metadata             Json?       // Store game-specific data (moves, scores, duration, etc.)
+  startedAt            DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime    @default(now())
+  
+  @@index([roomId])
+  @@index([status])
+  @@index([gameId])
+}
