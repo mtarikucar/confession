@@ -1,0 +1,58 @@
+{
+  "name": "confession-game",
+  "version": "1.0.0",
+  "description": "Real-time multiplayer confession game with mini-games",
+  "main": "server/index.js",
+  "type": "module",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "nodemon server/index.js",
+    "client:dev": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "install:all": "npm install && cd client && npm install",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js",
+    "db:reset": "prisma migrate reset",
+    "db:studio": "prisma studio",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.14.0",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "@technoeren/tdk-api": "^0.2.2",
+    "bcryptjs": "^3.0.2",
+    "bull": "^4.16.5",
+    "bullmq": "^5.58.0",
+    "compression": "^1.8.1",
+    "connect-redis": "^9.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^8.0.1",
+    "express-session": "^1.18.2",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.7.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "pg": "^8.16.3",
+    "prisma": "^6.14.0",
+    "redis": "^5.8.2",
+    "socket.io": "^4.6.1",
+    "socket.io-redis": "^6.1.1",
+    "uuid": "^9.0.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "nodemon": "^3.0.1"
+  }
+}

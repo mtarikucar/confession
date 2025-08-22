@@ -1,0 +1,310 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String          @id @default(uuid())
+  email           String?         @unique
+  username        String?         @unique
+  password        String?
+  nickname        String
+  avatar          String?
+  bio             String?
+  provider        AuthProvider    @default(LOCAL)
+  providerId      String?
+  refreshToken    String?
+  isActive        Boolean         @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  sessions        Session[]
+  roomsCreated    Room[]          @relation("RoomCreator")
+  roomPlayers     RoomPlayer[]
+  confessions     Confession[]
+  gameStats       GameStat[]
+  chatMessages    ChatMessage[]
+  achievements    UserAchievement[]
+  friends         Friend[]        @relation("UserFriends")
+  friendOf        Friend[]        @relation("FriendOfUser")
+  notifications   Notification[]
+
+  @@index([email])
+  @@index([username])
+  @@index([provider, providerId])
+}
+
+model Session {
+  id              String          @id @default(uuid())
+  userId          String
+  socketId        String?         @unique
+  token           String          @unique
+  ipAddress       String?
+  userAgent       String?
+  isActive        Boolean         @default(true)
+  expiresAt       DateTime
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([socketId])
+}
+
+model Room {
+  id              String          @id @default(uuid())
+  code            String          @unique
+  name            String
+  description     String?
+  password        String?
+  maxPlayers      Int             @default(20)
+  isPublic        Boolean         @default(true)
+  isActive        Boolean         @default(true)
+  creatorId       String
+  currentGameId   String?
+  settings        Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  creator         User            @relation("RoomCreator", fields: [creatorId], references: [id])
+  players         RoomPlayer[]
+  games           Game[]
+  confessions     Confession[]
+  chatMessages    ChatMessage[]
+
+  @@index([code])
+  @@index([isPublic, isActive])
+}
+
+model RoomPlayer {
+  id              String          @id @default(uuid())
+  roomId          String
+  userId          String
+  isWaiting       Boolean         @default(true)
+  isSpectator     Boolean         @default(false)
+  joinedAt        DateTime        @default(now())
+  leftAt          DateTime?
+
+  // Relations
+  room            Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id])
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model Game {
+  id              String          @id @default(uuid())
+  roomId          String
+  type            GameType
+  state           Json
+  players         Json            // Array of player IDs
+  winnerId        String?
+  rankings        Json?           // Final rankings
+  startedAt       DateTime        @default(now())
+  endedAt         DateTime?
+  duration        Int?            // in seconds
+  
+  // Relations
+  room            Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  gameStats       GameStat[]
+  gameActions     GameAction[]
+
+  @@index([roomId])
+  @@index([type])
+  @@index([startedAt])
+}
+
+model GameStat {
+  id              String          @id @default(uuid())
+  gameId          String
+  userId          String
+  score           Int             @default(0)
+  position        Int?            // Final position
+  wins            Int             @default(0)
+  losses          Int             @default(0)
+  customStats     Json?           // Game-specific stats
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  game            Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id])
+
+  @@unique([gameId, userId])
+  @@index([userId])
+  @@index([gameId])
+}
+
+model GameAction {
+  id              String          @id @default(uuid())
+  gameId          String
+  playerId        String
+  action          Json
+  timestamp       DateTime        @default(now())
+
+  // Relations
+  game            Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+  @@index([playerId])
+  @@index([timestamp])
+}
+
+model Confession {
+  id              String          @id @default(uuid())
+  roomId          String
+  userId          String
+  text            String
+  isRevealed      Boolean         @default(false)
+  revealedAt      DateTime?
+  revealedInGameId String?
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  room            Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id])
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([isRevealed])
+}
+
+model ChatMessage {
+  id              String          @id @default(uuid())
+  roomId          String
+  userId          String?
+  nickname        String
+  text            String
+  type            MessageType     @default(CHAT)
+  isSystem        Boolean         @default(false)
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  room            Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user            User?           @relation(fields: [userId], references: [id])
+
+  @@index([roomId])
+  @@index([createdAt])
+}
+
+model Achievement {
+  id              String          @id @default(uuid())
+  code            String          @unique
+  name            String
+  description     String
+  icon            String?
+  points          Int             @default(10)
+  category        String
+  requirement     Json            // Conditions to unlock
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  users           UserAchievement[]
+
+  @@index([code])
+  @@index([category])
+}
+
+model UserAchievement {
+  id              String          @id @default(uuid())
+  userId          String
+  achievementId   String
+  unlockedAt      DateTime        @default(now())
+  progress        Int             @default(100) // Percentage
+
+  // Relations
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement     Achievement     @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+model Friend {
+  id              String          @id @default(uuid())
+  userId          String
+  friendId        String
+  status          FriendStatus    @default(PENDING)
+  createdAt       DateTime        @default(now())
+  acceptedAt      DateTime?
+
+  // Relations
+  user            User            @relation("UserFriends", fields: [userId], references: [id], onDelete: Cascade)
+  friend          User            @relation("FriendOfUser", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([userId])
+  @@index([friendId])
+  @@index([status])
+}
+
+model Notification {
+  id              String          @id @default(uuid())
+  userId          String
+  type            NotificationType
+  title           String
+  message         String
+  data            Json?
+  isRead          Boolean         @default(false)
+  readAt          DateTime?
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+// Enums
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  DISCORD
+}
+
+enum GameType {
+  ROCK_PAPER_SCISSORS
+  RACING_3D
+  DRAWING_GUESS
+  WORD_BATTLE
+}
+
+enum MessageType {
+  CHAT
+  CONFESSION
+  SYSTEM
+  GAME_UPDATE
+}
+
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  GAME_INVITE
+  ACHIEVEMENT_UNLOCKED
+  CONFESSION_REVEALED
+  SYSTEM
+}

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(del \"D:\\HDD\\projects\\confession_game\\server\\lib\\redis.js\")",
+      "Bash(npm run dev:*)",
+      "Bash(taskkill:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(npm install:*)",
+      "Bash(del \"D:\\HDD\\projects\\confession_game\\server\\data\\turkish-words.json\")",
+      "Bash(npx prisma migrate:*)",
+      "Bash(docker:*)",
+      "Bash(npx prisma generate:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,62 @@
+.game-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.game-header {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 20px 25px;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+}
+
+.game-header h2 {
+  font-size: 1.5rem;
+}
+
+.game-players {
+  display: flex;
+  gap: 20px;
+  font-size: 1.1rem;
+}
+
+.game-players span {
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-players .current-player {
+  background: rgba(255, 255, 255, 0.5);
+  font-weight: bold;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+
+.game-content {
+  flex: 1;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  padding: 25px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
