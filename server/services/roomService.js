@@ -25,6 +25,10 @@ class RoomService {
         throw new Error('Failed to generate unique room code');
       }
 
+      // Set default game pool to all available games
+      const defaultGamePool = ['word-battle', 'drawing-guess', 'rock-paper-scissors', 'truth-or-dare'];
+      const settings = { gamePool: defaultGamePool };
+
       // Create room in database
       const room = await prisma.room.create({
         data: {
@@ -36,6 +40,7 @@ class RoomService {
           maxPlayers,
           isPublic,
           creatorId,
+          settings,
           players: {
             create: {
               userId: creatorId,
@@ -152,14 +157,22 @@ class RoomService {
         include: {
           players: {
             where: { 
-              userId,
               leftAt: null 
+            },
+            include: {
+              user: true
             }
           }
         }
       });
 
-      if (!room || room.players.length === 0) {
+      if (!room) {
+        return false;
+      }
+
+      // Check if user is in room
+      const userInRoom = room.players.find(p => p.userId === userId);
+      if (!userInRoom) {
         return false;
       }
 
@@ -174,6 +187,24 @@ class RoomService {
           leftAt: new Date()
         }
       });
+
+      // If the leaving player was the creator, transfer admin to another player
+      if (room.creatorId === userId) {
+        const remainingPlayers = room.players.filter(p => p.userId !== userId);
+        if (remainingPlayers.length > 0) {
+          // Transfer admin to the first remaining player
+          const newCreatorId = remainingPlayers[0].userId;
+          await prisma.room.update({
+            where: { id: room.id },
+            data: { creatorId: newCreatorId }
+          });
+          logInfo('Admin role transferred', { 
+            roomCode, 
+            oldAdmin: userId, 
+            newAdmin: newCreatorId 
+          });
+        }
+      }
 
       // Update cache
       await roomCache.removePlayer(roomCode, userId);
@@ -292,6 +323,17 @@ class RoomService {
         }
       }
 
+      // Parse settings
+      let settings = room.settings || {};
+      
+      // Set default game pool if not set
+      if (!settings.gamePool || settings.gamePool.length === 0) {
+        settings = {
+          ...settings,
+          gamePool: ['word-battle', 'drawing-guess', 'rock-paper-scissors', 'turbo-legends']
+        };
+      }
+
       // Format room data
       return {
         id: room.id,
@@ -302,6 +344,8 @@ class RoomService {
         isPublic: room.isPublic,
         isActive: room.isActive,
         creator: room.creator,
+        creatorId: room.creatorId,  // Add this for easier checks
+        settings: settings,
         players: room.players.map(p => ({
           id: p.user.id,
           nickname: p.user.nickname,
@@ -595,6 +639,101 @@ class RoomService {
     } catch (error) {
       logError(error, { roomId, userId, isWaiting });
       return false;
+    }
+  }
+
+  /**
+   * Update room settings
+   */
+  async updateRoomSettings(roomId, newSettings) {
+    try {
+      // First get existing room with current settings
+      const existingRoom = await prisma.room.findUnique({
+        where: { id: roomId },
+        select: { settings: true }
+      });
+      
+      if (!existingRoom) {
+        throw new Error('Room not found');
+      }
+
+      // Merge new settings with existing settings
+      const currentSettings = existingRoom.settings || {};
+      const mergedSettings = { ...currentSettings, ...newSettings };
+
+      // Update room settings
+      const updatedRoom = await prisma.room.update({
+        where: { id: roomId },
+        data: {
+          settings: mergedSettings
+        }
+      });
+
+      logInfo('Room settings updated', { roomId, newSettings, mergedSettings });
+      return updatedRoom;
+    } catch (error) {
+      logError(error, { roomId, newSettings });
+      throw error;
+    }
+  }
+
+  /**
+   * Get room settings
+   */
+  async getRoomSettings(roomId) {
+    try {
+      const room = await prisma.room.findUnique({
+        where: { id: roomId },
+        select: { settings: true }
+      });
+
+      if (!room || !room.settings) {
+        // Return default game pool if no settings
+        return {
+          gamePool: ['word-battle', 'drawing-guess', 'rock-paper-scissors', 'turbo-legends']
+        };
+      }
+
+      // Parse settings if it's a string
+      if (typeof room.settings === 'string') {
+        try {
+          const parsedSettings = JSON.parse(room.settings);
+          // Filter out turbo-racing from parsed settings
+          if (parsedSettings.gamePool && Array.isArray(parsedSettings.gamePool)) {
+            parsedSettings.gamePool = parsedSettings.gamePool.filter(game => game !== 'turbo-racing');
+            if (parsedSettings.gamePool.length === 0) {
+              parsedSettings.gamePool = ['word-battle', 'drawing-guess', 'rock-paper-scissors', 'turbo-legends'];
+            }
+          }
+          return parsedSettings;
+        } catch (e) {
+          return {
+            gamePool: ['word-battle', 'drawing-guess', 'rock-paper-scissors', 'turbo-legends']
+          };
+        }
+      }
+
+      // Return the settings object directly if it's already an object
+      const settings = room.settings || {
+        gamePool: ['word-battle', 'drawing-guess', 'rock-paper-scissors', 'turbo-legends']
+      };
+      
+      // Filter out turbo-racing if it exists in gamePool
+      if (settings.gamePool && Array.isArray(settings.gamePool)) {
+        settings.gamePool = settings.gamePool.filter(game => game !== 'turbo-racing');
+        
+        // If empty after filtering, use defaults
+        if (settings.gamePool.length === 0) {
+          settings.gamePool = ['word-battle', 'drawing-guess', 'rock-paper-scissors', 'turbo-legends'];
+        }
+      }
+      
+      return settings;
+    } catch (error) {
+      logError(error, { roomId });
+      return {
+        gamePool: ['word-battle', 'drawing-guess', 'rock-paper-scissors', 'turbo-legends']
+      };
     }
   }
 }

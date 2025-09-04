@@ -15,8 +15,14 @@ dotenv.config();
 
 // Import configurations
 import prisma, { testConnection } from './config/database.js';
-import redisClient, { createRedisAdapter } from './config/redis.js';
+import redisClient from './config/redis.js';
 import logger, { logInfo, logError } from './config/logger.js';
+import { 
+  socketConfig, 
+  createRedisAdapter, 
+  performanceMiddleware,
+  optimizeSocketIO 
+} from './config/socketConfig.js';
 
 // Import middleware
 import { 
@@ -41,16 +47,23 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = createServer(app);
 
-// Initialize Socket.IO with Redis adapter
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173'],
-    credentials: true
-  },
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  transports: ['websocket', 'polling'],
-  adapter: createRedisAdapter()
+// Initialize Socket.IO with optimized configuration
+const io = new Server(server, socketConfig);
+
+// Apply optimizations
+optimizeSocketIO(io);
+
+// Setup Redis adapter for scaling
+createRedisAdapter().then(adapter => {
+  if (adapter) {
+    io.adapter(adapter);
+    logInfo('Redis adapter attached to Socket.IO');
+  } else {
+    logInfo('Running Socket.IO without Redis adapter (single instance mode)');
+  }
+}).catch(error => {
+  logError(error, { context: 'Redis adapter setup' });
+  logInfo('Running Socket.IO without Redis adapter (single instance mode)');
 });
 
 // Make io globally available (for monitoring)
@@ -124,7 +137,7 @@ app.use(errorHandler);
 setupSocketHandlers(io);
 
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 async function startServer() {
   try {
@@ -163,7 +176,14 @@ async function startServer() {
 
 startServer();
 
+// Handle uncaught exceptions and unhandled rejections
+handleUncaughtException();
+handleUnhandledRejection();
+
 // Graceful shutdown
 gracefulShutdown(server, prisma, redisClient);
 
 export default server;
+
+
+

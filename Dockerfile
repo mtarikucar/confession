@@ -38,7 +38,7 @@ RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
-EXPOSE 3001
+EXPOSE 3004
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server/index.js"]

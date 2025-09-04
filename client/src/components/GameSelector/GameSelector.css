@@ -1,0 +1,366 @@
+.game-selector {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.selector-header {
+  margin-bottom: 20px;
+}
+
+.selector-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.game-pool-selector .selector-info {
+  font-size: 13px;
+  color: #666;
+  margin: 8px 0;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.game-card {
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.game-card:hover {
+  border-color: #3f51b5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.game-card.selected {
+  border-color: #3f51b5;
+  background: #f5f7ff;
+}
+
+.game-card.non-interactive {
+  cursor: default;
+}
+
+.game-card.non-interactive:hover {
+  transform: none;
+  border-color: #e0e0e0;
+  box-shadow: none;
+}
+
+.game-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.game-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.game-description {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.selected-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  background: #3f51b5;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .game-selector {
+    color: #f0f0f0;
+  }
+  
+  .selector-header h2 {
+    color: #f0f0f0;
+  }
+  
+  .game-card {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+  
+  .game-card:hover {
+    border-color: #5c6bc0;
+  }
+  
+  .game-card.selected {
+    border-color: #5c6bc0;
+    background: #2d3142;
+  }
+  
+  .game-name {
+    color: #f0f0f0;
+  }
+  
+  .game-description {
+    color: #aaa;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .games-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .game-card {
+    padding: 16px;
+  }
+}
+
+/* Game Pool Selector (Settings modal) */
+.game-pool-selector {
+  padding: 15px;
+}
+
+.pool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.pool-card {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pool-card:hover {
+  border-color: #3f51b5;
+  background: #f5f7ff;
+}
+
+.pool-card.non-interactive {
+  cursor: default;
+}
+
+.checkbox-area {
+  margin-right: 12px;
+  padding-top: 2px;
+}
+
+.custom-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #3f51b5;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.custom-checkbox.checked {
+  background: #3f51b5;
+  border-color: #3f51b5;
+}
+
+.checkmark {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.game-content {
+  flex: 1;
+}
+
+.pool-card .game-icon {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.pool-card .game-name {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+  color: #333;
+}
+
+
+.pool-card .game-description {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.selected-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f5f7ff;
+  border-radius: 6px;
+  margin: 15px 0;
+  font-size: 14px;
+  color: #3f51b5;
+}
+
+.pool-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.select-all-btn,
+.clear-all-btn {
+  padding: 6px 12px;
+  border: 1px solid #3f51b5;
+  background: white;
+  color: #3f51b5;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-all-btn:hover,
+.clear-all-btn:hover {
+  background: #3f51b5;
+  color: white;
+}
+
+.update-pool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+  margin: 30px auto;
+  padding: 12px 24px;
+  background: #3f51b5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.update-pool-btn:hover:not(:disabled) {
+  background: #303f9f;
+  transform: translateY(-1px);
+}
+
+.update-pool-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading indicator */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  margin: 20px 0;
+  background: #f5f7ff;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #3f51b5;
+}
+
+.spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(63, 81, 181, 0.3);
+  border-top-color: #3f51b5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Dark mode for pool selector */
+@media (prefers-color-scheme: dark) {
+  .pool-card {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+  
+  .pool-card:hover {
+    border-color: #5c6bc0;
+    background: #2d3142;
+  }
+  
+  .custom-checkbox {
+    background: #2a2a2a;
+    border-color: #5c6bc0;
+  }
+  
+  .custom-checkbox.checked {
+    background: #5c6bc0;
+    border-color: #5c6bc0;
+  }
+  
+  .pool-card .game-name {
+    color: #f0f0f0;
+  }
+  
+  .pool-card .game-info,
+  .pool-card .game-description {
+    color: #aaa;
+    border-color: #444;
+  }
+  
+  .selected-count {
+    background: #2d3142;
+    color: #5c6bc0;
+  }
+  
+  .select-all-btn,
+  .clear-all-btn {
+    background: #2a2a2a;
+    border-color: #5c6bc0;
+    color: #5c6bc0;
+  }
+  
+  .select-all-btn:hover,
+  .clear-all-btn:hover {
+    background: #5c6bc0;
+    color: white;
+  }
+}

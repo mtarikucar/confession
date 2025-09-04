@@ -12,59 +12,41 @@ class SessionService {
     try {
       // Generate session token
       const token = jwt.sign(
-        { userId, socketId },
+        { userId, socketId, tabId: metadata.tabId },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
 
-      // Check if user already has an active session
-      const existingSession = await prisma.session.findFirst({
-        where: {
+      // Always create new session for new socket connections
+      // This allows multiple tabs/windows to have independent sessions
+      const session = await prisma.session.create({
+        data: {
+          id: uuidv4(),
           userId,
-          isActive: true
+          socketId,
+          token,
+          ipAddress: metadata.ipAddress || 'guest',
+          userAgent: metadata.userAgent || metadata.tabId || 'guest',
+          isActive: true,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
         }
       });
-
-      let session;
-      
-      if (existingSession) {
-        // Update existing session with new socket ID
-        session = await prisma.session.update({
-          where: { id: existingSession.id },
-          data: {
-            socketId,
-            token,
-            ipAddress: metadata.ipAddress,
-            userAgent: metadata.userAgent,
-            updatedAt: new Date(),
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
-          }
-        });
-      } else {
-        // Create new session
-        session = await prisma.session.create({
-          data: {
-            id: uuidv4(),
-            userId,
-            socketId,
-            token,
-            ipAddress: metadata.ipAddress,
-            userAgent: metadata.userAgent,
-            isActive: true,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
-          }
-        });
-      }
 
       // Store in Redis for fast access
       await sessionStore.set(socketId, {
         sessionId: session.id,
         userId,
         token,
+        tabId: metadata.tabId,
         createdAt: session.createdAt
       });
 
-      logInfo('Socket session created', { sessionId: session.id, userId, socketId });
+      logInfo('Socket session created', { 
+        sessionId: session.id, 
+        userId, 
+        socketId,
+        tabId: metadata.tabId 
+      });
 
       return session;
     } catch (error) {
@@ -149,25 +131,58 @@ class SessionService {
   /**
    * Update socket ID for reconnection
    */
-  async updateSocketId(sessionId, newSocketId) {
+  async updateSocketId(sessionId, newSocketId, roomCode = null) {
     try {
+      // First get the current session to get the old socket ID
+      const currentSession = await prisma.session.findUnique({
+        where: { id: sessionId }
+      });
+      
+      if (!currentSession) {
+        logError('Session not found for update', { sessionId });
+        return null;
+      }
+      
+      const oldSocketId = currentSession.socketId;
+      
+      // Now update with new socket ID
       const session = await prisma.session.update({
         where: { id: sessionId },
         data: {
           socketId: newSocketId,
           updatedAt: new Date()
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              nickname: true,
+              avatar: true
+            }
+          }
         }
       });
 
-      // Update Redis
-      await sessionStore.delete(session.socketId);
+      // Delete old Redis entry using the OLD socket ID
+      if (oldSocketId && oldSocketId !== newSocketId) {
+        await sessionStore.delete(oldSocketId);
+      }
+      
+      // Set new Redis entry
       await sessionStore.set(newSocketId, {
         sessionId: session.id,
         userId: session.userId,
-        token: session.token
+        token: session.token,
+        user: session.user,
+        roomCode: roomCode
       });
 
-      logInfo('Socket ID updated', { sessionId, newSocketId });
+      logInfo('Socket ID updated', { 
+        sessionId, 
+        oldSocketId, 
+        newSocketId, 
+        roomCode 
+      });
 
       return session;
     } catch (error) {
@@ -297,6 +312,72 @@ class SessionService {
       };
     } catch (error) {
       logError(error, { socketId, nickname });
+      throw error;
+    }
+  }
+
+  /**
+   * Create new session for socket (allows multiple sessions per user)
+   */
+  async createNewSessionForSocket(socketId, nickname, tabId) {
+    try {
+      // Always create a fresh guest user for each new session
+      // This allows multiple tabs to have independent sessions
+      const user = await prisma.user.create({
+        data: {
+          id: uuidv4(),
+          nickname: nickname || `Guest_${Math.random().toString(36).substr(2, 6)}`,
+          provider: 'LOCAL',
+          isActive: true,
+          lastLoginAt: new Date()
+        }
+      });
+
+      // Generate session token with tab ID for uniqueness
+      const token = jwt.sign(
+        { userId: user.id, socketId, tabId },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      // Create new session (don't reuse existing ones)
+      const session = await prisma.session.create({
+        data: {
+          id: uuidv4(),
+          userId: user.id,
+          socketId,
+          token,
+          ipAddress: 'guest',
+          userAgent: tabId || 'guest',
+          isActive: true,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
+      });
+
+      // Store in Redis for fast access
+      await sessionStore.set(socketId, {
+        sessionId: session.id,
+        userId: user.id,
+        token,
+        user: user,
+        tabId: tabId,
+        createdAt: session.createdAt
+      });
+
+      logInfo('New session created', { 
+        sessionId: session.id, 
+        userId: user.id, 
+        socketId,
+        tabId 
+      });
+
+      return {
+        user,
+        session,
+        isNew: true
+      };
+    } catch (error) {
+      logError(error, { socketId, nickname, tabId });
       throw error;
     }
   }

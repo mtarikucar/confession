@@ -1,0 +1,160 @@
+.room-settings {
+  background: var(--card-bg);
+  backdrop-filter: blur(15px);
+  border-radius: var(--border-radius);
+  margin: 20px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.settings-info {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.settings-info h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.ready-counter-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 20px;
+}
+
+.ready-icon {
+  font-size: 1.1rem;
+}
+
+.ready-text {
+  color: #4CAF50;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.settings-toggle {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  transition: transform 0.2s ease;
+}
+
+.settings-toggle:hover {
+  transform: scale(1.1);
+}
+
+.settings-content {
+  padding: 30px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.game-pool-section {
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h4 {
+  margin: 0;
+  color: #667eea;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.host-only-badge {
+  padding: 4px 12px;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 12px;
+  color: #ff9800;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.pool-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(0, 136, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 136, 255, 0.2);
+}
+
+.pool-status {
+  margin: 0 0 8px 0;
+  color: #4CAF50;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.pool-description {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .room-settings {
+    margin: 10px;
+  }
+  
+  .settings-header {
+    padding: 15px 20px;
+  }
+  
+  .settings-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .settings-content {
+    padding: 20px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}

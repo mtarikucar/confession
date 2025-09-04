@@ -283,9 +283,9 @@ enum AuthProvider {
 
 enum GameType {
   ROCK_PAPER_SCISSORS
-  RACING_3D
   DRAWING_GUESS
   WORD_BATTLE
+  TRUTH_OR_DARE
 }
 
 enum MessageType {

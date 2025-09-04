@@ -5,30 +5,55 @@ import { handleConfessionEvents } from './confessionHandlers.js';
 import { authenticateSocket } from '../middleware/socketAuth.js';
 import sessionService from '../services/sessionService.js';
 import roomService from '../services/roomService.js';
+import gameService from '../services/gameService.js';
+import gameStateService from '../services/gameStateService.js';
 import { logInfo, logError } from '../config/logger.js';
+import { performanceMiddleware } from '../config/socketConfig.js';
 import prisma from '../config/database.js';
 
 export function setupSocketHandlers(io) {
   // Apply authentication middleware
   io.use(authenticateSocket);
+  
+  // Apply performance monitoring middleware
+  io.use(performanceMiddleware);
 
   io.on('connection', async (socket) => {
     logInfo('New connection', { 
       socketId: socket.id,
       userId: socket.userId,
-      nickname: socket.user?.nickname 
+      nickname: socket.user?.nickname,
+      tabId: socket.tabId
     });
 
-    // Send authentication info back to client
-    socket.emit('authenticated', {
-      success: true,
-      user: {
-        id: socket.userId,
-        nickname: socket.user.nickname,
-        avatar: socket.user.avatar
-      },
-      token: socket.sessionToken,
-      isNew: socket.isNewUser
+    // Send authentication info back to client immediately
+    // Use process.nextTick to ensure it's sent after connection is established
+    process.nextTick(async () => {
+      socket.emit('authenticated', {
+        success: true,
+        user: {
+          id: socket.userId,
+          nickname: socket.user.nickname,
+          avatar: socket.user.avatar
+        },
+        token: socket.sessionToken,
+        isNew: socket.isNewUser
+      });
+      
+      logInfo('Authentication sent to client', {
+        socketId: socket.id,
+        userId: socket.userId
+      });
+      
+      // If we have a lastRoomCode from reconnection, set it
+      if (socket.lastRoomCode) {
+        socket.roomCode = socket.lastRoomCode;
+        socket.join(socket.lastRoomCode);
+        logInfo('Restored room context after reconnection', {
+          socketId: socket.id,
+          roomCode: socket.lastRoomCode
+        });
+      }
     });
 
     // Set up event handlers
@@ -132,6 +157,13 @@ export function setupSocketHandlers(io) {
         const rooms = await roomService.getUserRooms(socket.userId);
         
         for (const room of rooms) {
+          // Check if user is in an active game
+          const currentGame = await gameService.getCurrentGameByRoomId(room.id);
+          if (currentGame) {
+            // Mark player as disconnected in game state
+            await gameStateService.handlePlayerDisconnect(socket.userId, currentGame.id);
+          }
+          
           // Don't immediately remove from room - allow reconnection
           io.to(room.code).emit('playerDisconnected', {
             playerId: socket.userId,

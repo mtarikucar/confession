@@ -250,6 +250,84 @@ export const rateLimiter = {
   }
 };
 
+// Word validation cache functions
+export const wordCache = {
+  async get(word) {
+    try {
+      const result = await redisClient.get(`word:${word.toLowerCase()}`);
+      return result === null ? undefined : result === 'true';
+    } catch (error) {
+      console.error('Error getting word from cache:', error);
+      return undefined;
+    }
+  },
+
+  async set(word, isValid, ttl = 86400) { // 24 hour TTL by default
+    try {
+      await redisClient.setex(
+        `word:${word.toLowerCase()}`,
+        ttl,
+        isValid.toString()
+      );
+      return true;
+    } catch (error) {
+      console.error('Error setting word in cache:', error);
+      return false;
+    }
+  },
+
+  async setMultiple(words, ttl = 86400) {
+    try {
+      const pipeline = redisClient.pipeline();
+      
+      for (const [word, isValid] of Object.entries(words)) {
+        pipeline.setex(`word:${word.toLowerCase()}`, ttl, isValid.toString());
+      }
+      
+      await pipeline.exec();
+      return true;
+    } catch (error) {
+      console.error('Error setting multiple words in cache:', error);
+      return false;
+    }
+  },
+
+  async exists(word) {
+    try {
+      const exists = await redisClient.exists(`word:${word.toLowerCase()}`);
+      return exists === 1;
+    } catch (error) {
+      console.error('Error checking word existence:', error);
+      return false;
+    }
+  },
+
+  async getStats() {
+    try {
+      const keys = await redisClient.keys('word:*');
+      let validCount = 0;
+      let invalidCount = 0;
+      
+      if (keys.length > 0) {
+        const values = await redisClient.mget(...keys);
+        values.forEach(val => {
+          if (val === 'true') validCount++;
+          else if (val === 'false') invalidCount++;
+        });
+      }
+      
+      return {
+        total: keys.length,
+        valid: validCount,
+        invalid: invalidCount
+      };
+    } catch (error) {
+      console.error('Error getting word cache stats:', error);
+      return { total: 0, valid: 0, invalid: 0 };
+    }
+  }
+};
+
 // Leaderboard functions
 export const leaderboard = {
   async addScore(userId, score) {
@@ -311,5 +389,8 @@ export const leaderboard = {
 export function createRedisAdapter() {
   return createAdapter(pubClient, subClient);
 }
+
+// Export pub/sub clients for external use
+export { pubClient, subClient };
 
 export default redisClient;

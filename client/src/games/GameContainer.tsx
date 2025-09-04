@@ -1,7 +1,7 @@
 import RockPaperScissors from './RockPaperScissors/RockPaperScissors';
-import Racing3D from './Racing3D/Racing3D';
 import DrawingGuess from './DrawingGuess/DrawingGuess';
 import WordBattle from './WordBattle/WordBattle';
+import TruthOrDare from './TruthOrDare/TruthOrDare';
 import './GameContainer.css';
 
 interface GameContainerProps {
@@ -25,16 +25,6 @@ function GameContainer({ game, socket, room, player, playerId }: GameContainerPr
             playerId={playerId}
           />
         );
-      case 'racing-3d':
-        return (
-          <Racing3D 
-            game={game} 
-            socket={socket}
-            room={room}
-            player={player} 
-            playerId={playerId}
-          />
-        );
       case 'drawing-guess':
         return (
           <DrawingGuess 
@@ -48,6 +38,16 @@ function GameContainer({ game, socket, room, player, playerId }: GameContainerPr
       case 'word-battle':
         return (
           <WordBattle 
+            game={game} 
+            socket={socket}
+            room={room}
+            player={player} 
+            playerId={playerId}
+          />
+        );
+      case 'truth-or-dare':
+        return (
+          <TruthOrDare 
             game={game} 
             socket={socket}
             room={room}

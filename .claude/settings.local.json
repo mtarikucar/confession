@@ -11,7 +11,13 @@
       "Bash(del \"D:\\HDD\\projects\\confession_game\\server\\data\\turkish-words.json\")",
       "Bash(npx prisma migrate:*)",
       "Bash(docker:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "WebFetch(domain:sozluk.gov.tr)",
+      "WebFetch(domain:sozluk.api.anakaynak.com)",
+      "Bash(npm run server:dev:*)",
+      "Bash(del \"D:\\HDD\\projects\\confession_game\\server\\games\\TurboRacing.js\")",
+      "Bash(cmd /c:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

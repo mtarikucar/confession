@@ -1,77 +1,5 @@
 import { GameInterface } from './gameInterface.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load Turkish words from JSON file
-let TURKISH_WORDS = new Set();
-try {
-  const wordsData = fs.readFileSync(path.join(__dirname, '../data/turkish-words.json'), 'utf8');
-  const wordsJson = JSON.parse(wordsData);
-  TURKISH_WORDS = new Set(wordsJson.words);
-  console.log(`Loaded ${TURKISH_WORDS.size} Turkish words from dictionary`);
-} catch (error) {
-  console.error('Error loading Turkish words dictionary:', error);
-  // Fallback to a basic set of words
-  TURKISH_WORDS = new Set([
-  // 3 letter words
-  'ada', 'ana', 'ara', 'art', 'aşk', 'ata', 'ayı', 'bal', 'baş', 'ben', 'bir', 'bit', 'boy', 'buz', 'cam',
-  'can', 'cep', 'çam', 'çay', 'dal', 'dam', 'dar', 'den', 'der', 'dil', 'diş', 'don', 'doz', 'düş', 'ebe',
-  'ece', 'eda', 'ege', 'eki', 'eli', 'eme', 'eni', 'eri', 'eşi', 'eti', 'eve', 'evi', 'eyi', 'fal', 'far',
-  'fay', 'fen', 'fil', 'fon', 'gaz', 'gel', 'gen', 'gez', 'gir', 'git', 'göl', 'gön', 'gör', 'gül', 'gün',
-  'hal', 'han', 'har', 'has', 'hat', 'hay', 'her', 'hiç', 'his', 'hoş', 'huy', 'iki', 'ile', 'ilk', 'ini',
-  'ipi', 'iri', 'işi', 'iti', 'iyi', 'jak', 'jel', 'jet', 'jon', 'jöle', 'kaba', 'kaç', 'kal', 'kam', 'kan',
-  'kap', 'kar', 'kaş', 'kat', 'kav', 'kay', 'kaz', 'kek', 'kel', 'ken', 'keş', 'kez', 'kış', 'kim', 'kin',
-  'kir', 'kit', 'kol', 'kom', 'kon', 'kor', 'kot', 'köy', 'köz', 'kul', 'kum', 'kup', 'kur', 'kuş', 'kut',
-  'küf', 'kül', 'küp', 'kür', 'laf', 'lak', 'led', 'lek', 'lem', 'len', 'leş', 'lif', 'lik', 'lin', 'lir',
-  'lok', 'lop', 'lor', 'lot', 'löş', 'lüp', 'mac', 'maç', 'mad', 'mağ', 'mal', 'man', 'mar', 'maş', 'mat',
-  'mum', 'muz', 'nam', 'nar', 'nem', 'net', 'not', 'nur', 'oda', 'oku', 'ola', 'ona', 'ora', 'ort', 'ota',
-  'oya', 'oyun', 'öde', 'ödü', 'öke', 'ömr', 'öne', 'önü', 'öpü', 'örn', 'öte', 'öve', 'öyk', 'öze', 'pak',
-  'pal', 'pan', 'par', 'pas', 'pay', 'paz', 'pel', 'pek', 'per', 'pes', 'pet', 'pik', 'pil', 'pis', 'pot',
-  'poz', 'pul', 'pus', 'püf', 'raf', 'ram', 'ray', 'ren', 'ret', 'rey', 'rol', 'rom', 'ruh', 'rum', 'rüy',
-  'sac', 'saf', 'sağ', 'sah', 'sal', 'san', 'sap', 'sar', 'sat', 'sav', 'say', 'saz', 'sel', 'sen', 'ser',
-  'ses', 'set', 'sık', 'sil', 'sim', 'sin', 'sir', 'sis', 'sit', 'siz', 'sol', 'som', 'son', 'sor', 'söz',
-  'sud', 'sun', 'sur', 'sus', 'süt', 'şad', 'şah', 'şak', 'şal', 'şan', 'şap', 'şar', 'şat', 'şek', 'şer',
-  'şey', 'şık', 'şim', 'şok', 'şov', 'şua', 'şuh', 'şut', 'tab', 'tac', 'tak', 'tam', 'tan', 'tap', 'tar',
-  'taş', 'tat', 'tav', 'tay', 'taz', 'tek', 'tel', 'tem', 'ten', 'tep', 'ter', 'tez', 'tık', 'tim', 'tip',
-  'tir', 'ton', 'top', 'tor', 'toy', 'töz', 'toz', 'tul', 'tur', 'tut', 'tuy', 'tuz', 'tül', 'tün', 'tür',
-  'tüm', 'tüp', 'tüs', 'tüy', 'ucu', 'ula', 'ulu', 'umu', 'una', 'ura', 'uyu', 'var', 'ver', 'vur', 'yağ',
-  'yak', 'yan', 'yap', 'yar', 'yaş', 'yat', 'yay', 'yaz', 'yed', 'yel', 'yem', 'yen', 'yer', 'yet', 'yık',
-  'yıl', 'yin', 'yiv', 'yol', 'yon', 'yor', 'yön', 'yoz', 'yön', 'yuf', 'yum', 'yun', 'yur', 'yut', 'yük',
-  'yün', 'yür', 'yüz', 'zam', 'zan', 'zar', 'zat', 'zay', 'zer', 'zil', 'zin', 'zir', 'zit', 'zor', 'zül',
-  
-  // 4 letter words
-  'abla', 'acil', 'adam', 'adım', 'ağaç', 'ağır', 'akıl', 'akış', 'alan', 'alım', 'altı', 'anne', 'araba',
-  'para', 'kara', 'kale', 'kral', 'dost', 'kafa', 'masa', 'saat', 'sana', 'bana', 'kedi', 'köpek', 'fare',
-  'kuyu', 'kuru', 'sulu', 'tatlı', 'acı', 'soğuk', 'sıcak', 'ılık', 'yeni', 'eski', 'genç', 'yaşlı', 'uzun',
-  'kısa', 'geniş', 'dar', 'yüksek', 'alçak', 'hızlı', 'yavaş', 'güçlü', 'zayıf', 'zengin', 'fakir', 'temiz',
-  'kirli', 'kuru', 'ıslak', 'boş', 'dolu', 'açık', 'kapalı', 'doğru', 'yanlış', 'kolay', 'zor', 'basit',
-  'arka', 'asıl', 'aşık', 'ayak', 'ayna', 'azim', 'baba', 'bacak', 'bahçe', 'bakış', 'balık', 'bardak',
-  'barış', 'başka', 'bayrak', 'bazı', 'bebek', 'beden', 'bekar', 'belki', 'benzer', 'beraber', 'beyaz',
-  'bilgi', 'bilim', 'biraz', 'bitki', 'bıçak', 'böyle', 'bugün', 'bulut', 'burun', 'büyük', 'cadde', 'canlı',
-  'cevap', 'çanta', 'çelik', 'çevre', 'çiçek', 'çocuk', 'çorba', 'dağlı', 'dakik', 'dalga', 'damat', 'damla',
-  'dans', 'dava', 'davul', 'dayı', 'değer', 'delik', 'demir', 'deniz', 'derin', 'dernek', 'ders', 'devam',
-  'dilek', 'dünya', 'düşük', 'ekmek', 'elma', 'emek', 'erkek', 'eşya', 'evlat', 'fakat', 'fazla', 'fikir',
-  'fırın', 'geniş', 'gıda', 'gibi', 'giriş', 'gözlük', 'güneş', 'güzel', 'haber', 'hafta', 'halk', 'hamur',
-  'hanım', 'hareket', 'hasta', 'hayat', 'hayal', 'hayvan', 'hazır', 'hemen', 'henüz', 'hepsi', 'herkes',
-  
-  // 5+ letter words
-  'abide', 'abluka', 'acele', 'acemi', 'açılış', 'adalet', 'adres', 'ağabey', 'ahşap', 'aile', 'akraba',
-  'aksam', 'aktör', 'albüm', 'alışveriş', 'altın', 'amele', 'anayasa', 'anlam', 'anlaşma', 'apartman',
-  'arazi', 'araştırma', 'arkadaş', 'asker', 'aslında', 'ateş', 'avukat', 'ayakkabı', 'ayrıca', 'bakan',
-  'bakkal', 'balkon', 'banyo', 'bardak', 'başarı', 'başkan', 'başlık', 'bayram', 'beceri', 'belediye',
-  'belge', 'belki', 'benzer', 'berber', 'beyaz', 'bilgisayar', 'bilim', 'binbaşı', 'bina', 'biraz',
-  'birçok', 'birlik', 'bisiklet', 'bıçak', 'böbrek', 'bölge', 'bölüm', 'boyun', 'bozmak', 'buhar',
-  'bulaşık', 'bulvar', 'bunlar', 'burada', 'buraya', 'büro', 'büyük', 'cadde', 'camii', 'ceket',
-  'cenaze', 'cevap', 'ceza', 'çamaşır', 'çamur', 'çarşı', 'çekmek', 'çelik', 'çeşit', 'çevre',
-  'çiftçi', 'çikolata', 'çimen', 'çimento', 'çizgi', 'çorap', 'çörek', 'çözüm', 'çukur', 'daire',
-  'dakika', 'dalga', 'damat', 'damla', 'davranış', 'dayanak', 'değer', 'değişik', 'delik', 'delil',
-  'demir', 'deneme', 'denge', 'deniz', 'deprem', 'derece', 'dergi', 'derin', 'dernek', 'dershane'
-  ]);
-}
+import { validateTurkishWord, getCacheStats } from '../services/wordValidationService.js';
 
 // Letter frequencies for Turkish
 const TURKISH_LETTER_FREQ = {
@@ -85,6 +13,10 @@ export class WordBattleGame extends GameInterface {
   constructor(players) {
     const playerIds = players.slice(0, 8);
     super(...playerIds);
+    
+    // Log cache statistics on game start
+    const cacheStats = getCacheStats();
+    console.log('Word validation cache stats:', cacheStats);
     
     this.players = playerIds;
     this.maxPlayers = 8;
@@ -250,7 +182,7 @@ export class WordBattleGame extends GameInterface {
     }, 3000);
   }
   
-  processAction(playerId, action) {
+  async processAction(playerId, action) {
     if (this.finished) {
       return { success: false, error: 'Game is finished' };
     }
@@ -264,7 +196,7 @@ export class WordBattleGame extends GameInterface {
     }
   }
   
-  handleWordSubmission(playerId, word) {
+  async handleWordSubmission(playerId, word) {
     console.log(`Player ${playerId} submitted word: ${word}`);
     
     // Normalize word
@@ -292,7 +224,7 @@ export class WordBattleGame extends GameInterface {
     }
     
     // Check if word exists in dictionary
-    if (!this.isValidTurkishWord(normalizedWord)) {
+    if (!(await this.isValidTurkishWord(normalizedWord))) {
       console.log(`Word not valid: ${normalizedWord}`);
       this.addSubmission(playerId, normalizedWord, false, 'Geçersiz kelime');
       return { success: false, error: 'Geçersiz kelime' };
@@ -346,17 +278,15 @@ export class WordBattleGame extends GameInterface {
     return true;
   }
   
-  isValidTurkishWord(word) {
-    // console.log(`Checking word: ${word}`);
-    
-    // Check our local dictionary
-    const isValid = TURKISH_WORDS.has(word);
-    console.log(`Word ${word} ${isValid ? 'found' : 'not found'} in dictionary (${TURKISH_WORDS.size} words loaded)`);
-    
-    // Future enhancement: Add API call here for words not in local dictionary
-    // Example: TDK API, Zemberek NLP, or custom word validation service
-    
-    return isValid;
+  async isValidTurkishWord(word) {
+    try {
+      const isValid = await validateTurkishWord(word);
+      return isValid;
+    } catch (error) {
+      console.error('Error validating word:', error);
+      // Return false on error to prevent invalid submissions
+      return false;
+    }
   }
   
   calculatePoints(word) {

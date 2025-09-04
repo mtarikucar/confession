@@ -1,9 +1,95 @@
 import roomService from '../services/roomService.js';
 import cacheService from '../services/cacheService.js';
+import gameStateService from '../services/gameStateService.js';
+import gameService from '../services/gameService.js';
 import { logInfo, logError } from '../config/logger.js';
 import prisma from '../config/database.js';
 
 export function handleRoomEvents(io, socket) {
+  // Handle room rejoin after reconnection
+  socket.on('rejoinRoom', async (data, callback) => {
+    try {
+      const { roomCode, lastState } = data;
+      
+      // Get current room state
+      const room = await roomService.getRoomByCode(roomCode);
+      
+      if (!room) {
+        return callback({ 
+          success: false, 
+          error: 'Room not found' 
+        });
+      }
+      
+      // Check if user is still in room
+      const isInRoom = room.players?.some(p => p.id === socket.userId);
+      
+      if (!isInRoom) {
+        // Try to rejoin if room has space
+        if (room.players?.length >= room.maxPlayers) {
+          return callback({ 
+            success: false, 
+            error: 'Room is full' 
+          });
+        }
+        
+        // Rejoin the room
+        await roomService.joinRoom(socket.userId, roomCode);
+      }
+      
+      // Join socket room
+      socket.join(roomCode);
+      socket.roomCode = roomCode;
+      
+      // Get updated room state
+      const updatedRoom = await roomService.getRoomById(room.id);
+      
+      // Check for active games and restore state
+      const currentGame = await gameService.getCurrentGameByRoomId(room.id);
+      let gameState = null;
+      
+      if (currentGame) {
+        // Try to load persisted game state
+        const persistedGame = await gameStateService.loadGame(currentGame.id);
+        if (persistedGame) {
+          gameState = {
+            id: currentGame.id,
+            type: currentGame.type,
+            players: currentGame.players,
+            state: persistedGame.state,
+            startedAt: persistedGame.startedAt
+          };
+          
+          // Mark player as reconnected in game
+          await gameStateService.handlePlayerReconnect(socket.userId, currentGame.id);
+        }
+      }
+      
+      callback({ 
+        success: true, 
+        room: updatedRoom,
+        game: gameState 
+      });
+      
+      // Notify others about reconnection
+      socket.to(roomCode).emit('playerReconnected', {
+        playerId: socket.userId,
+        nickname: socket.user?.nickname
+      });
+      
+      logInfo('Player rejoined room after reconnection', { 
+        userId: socket.userId, 
+        roomCode 
+      });
+    } catch (error) {
+      logError(error, { userId: socket.userId });
+      callback({ 
+        success: false, 
+        error: 'Failed to rejoin room' 
+      });
+    }
+  });
+
   // Create room
   socket.on('createRoom', async (data, callback) => {
     try {
@@ -251,7 +337,7 @@ export function handleRoomEvents(io, socket) {
         });
       }
 
-      const { name, description, maxPlayers, isPublic, password } = data;
+      const { name, description, maxPlayers, isPublic, password, gamePools } = data;
 
       // Update room settings in database
       const updated = await prisma.room.update({
@@ -261,7 +347,8 @@ export function handleRoomEvents(io, socket) {
           ...(description !== undefined && { description: description?.trim() }),
           ...(maxPlayers && { maxPlayers }),
           ...(isPublic !== undefined && { isPublic }),
-          ...(password !== undefined && { password })
+          ...(password !== undefined && { password }),
+          ...(gamePools !== undefined && { gamePools })
         }
       });
 

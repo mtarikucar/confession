@@ -117,13 +117,16 @@ export const handleSocketError = (socket, error) => {
 export const handleUnhandledRejection = () => {
   process.on('unhandledRejection', (err) => {
     logError(err, { type: 'unhandledRejection' });
+    console.error('Unhandled Rejection:', err);
     
-    if (process.env.NODE_ENV === 'production') {
-      // In production, log and continue
-      console.error('Unhandled Rejection:', err);
+    // Don't exit in development for lock errors
+    const isLockError = err?.message?.includes('lock');
+    if (process.env.NODE_ENV === 'production' || isLockError) {
+      // In production or for lock errors, log and continue
+      console.error('Continuing after unhandled rejection...');
     } else {
-      // In development, exit
-      console.error('Unhandled Rejection! Shutting down...');
+      // For other critical errors in development, exit
+      console.error('Critical error! Shutting down...');
       process.exit(1);
     }
   });

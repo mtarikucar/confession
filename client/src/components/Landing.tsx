@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Landing.css';
 
@@ -14,6 +14,11 @@ function Landing({ socket }: LandingProps) {
   const [error, setError] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
 
+  useEffect(() => {
+    // Don't clear sessions here - they might be valid for reconnection
+    // Sessions will be cleared only when explicitly creating a new connection
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -26,13 +31,16 @@ function Landing({ socket }: LandingProps) {
     try {
       setIsConnecting(true);
 
-      // Connect with nickname if not already connected
-      if (!socket.isConnected || !socket.isAuthenticated) {
-        await socket.connectWithNickname(nickname);
-      } else if (socket.player?.nickname !== nickname) {
-        // Update nickname if already connected but with different nickname
-        await socket.updateNickname(nickname);
+      // Clear old session before creating new one
+      const tabId = localStorage.getItem('tab_id');
+      if (tabId) {
+        localStorage.removeItem(`confession_game_session_${tabId}`);
+        localStorage.removeItem(`confession_game_session_${tabId}_room`);
+        localStorage.removeItem(`confession_game_session_${tabId}_game`);
       }
+      
+      // Now connect with new nickname
+      await socket.connectWithNickname(nickname);
 
       if (isCreating) {
         const { roomCode } = await socket.createRoom();

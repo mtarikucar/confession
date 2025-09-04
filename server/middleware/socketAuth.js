@@ -9,39 +9,48 @@ export const authenticateSocket = async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
     const nickname = socket.handshake.auth.nickname;
+    const roomCode = socket.handshake.auth.roomCode;
     const reconnection = socket.handshake.auth.reconnection || false;
+    const newSession = socket.handshake.auth.newSession || false;
+    const tabId = socket.handshake.auth.tabId;
 
-    // If reconnecting with token
-    if (reconnection && token) {
+    // If reconnecting with token (and not forcing new session)
+    if (reconnection && token && !newSession) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const session = await sessionService.getSessionByToken(token);
         
         if (session) {
-          // Update socket ID for reconnection
-          await sessionService.updateSocketId(session.id, socket.id);
+          // Update socket ID for reconnection with room info
+          await sessionService.updateSocketId(session.id, socket.id, roomCode);
           
           socket.userId = session.userId;
           socket.sessionId = session.id;
           socket.user = session.user;
+          socket.lastRoomCode = roomCode; // Store for potential room rejoin
+          socket.tabId = tabId;
           
           logInfo('Socket reconnected', { 
             userId: session.userId, 
             socketId: socket.id,
-            sessionId: session.id 
+            sessionId: session.id,
+            roomCode: roomCode,
+            tabId: tabId
           });
           
           return next();
         }
       } catch (err) {
-        logError(err, { token, socketId: socket.id });
+        logInfo('Token validation failed, creating new session', { socketId: socket.id });
+        // Fall through to create new session
       }
     }
 
-    // Create new session (guest user)
-    const { user, session, isNew } = await sessionService.getOrCreateUserForSocket(
+    // Create new session - allow multiple sessions per user
+    const { user, session, isNew } = await sessionService.createNewSessionForSocket(
       socket.id,
-      nickname
+      nickname,
+      tabId
     );
 
     socket.userId = user.id;
@@ -49,11 +58,14 @@ export const authenticateSocket = async (socket, next) => {
     socket.user = user;
     socket.sessionToken = session.token;
     socket.isNewUser = isNew;
+    socket.tabId = tabId;
 
     logInfo('Socket authenticated', { 
       userId: user.id, 
       socketId: socket.id,
-      isNew 
+      sessionId: session.id,
+      isNew,
+      tabId: tabId
     });
 
     next();
